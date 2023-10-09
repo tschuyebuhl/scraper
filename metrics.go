@@ -25,10 +25,11 @@ func UpdateMetrics(url string, wordCounts map[string]int) {
 }
 
 func Serve() {
+	addr := ":1337"
 	http.Handle("/metrics", promhttp.Handler())
 	go func() {
-		slog.Info("serving on :2112")
-		err := http.ListenAndServe(":2112", nil)
+		slog.Info("serving on ", "addr", addr)
+		err := http.ListenAndServe(addr, nil)
 		if err != nil {
 			slog.Error("error serving: %s", err)
 		}
