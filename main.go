@@ -4,6 +4,7 @@ import (
 	"github.com/tschuyebuhl/scraper/cache"
 	"github.com/tschuyebuhl/scraper/scraper"
 	"log/slog"
+	"net/http"
 	"os"
 	"os/signal"
 	"sync"
@@ -23,14 +24,16 @@ func main() {
 
 	taskChan := make(chan string, 1000)
 
-	const workerCount = 200
+	const workerCount = 2000
 	sem := make(chan struct{}, workerCount)
+
+	client := &http.Client{}
 
 	for i := 0; i < workerCount; i++ {
 		go func() {
 			for url := range taskChan {
 				err := scraper.Scrape(url, c, resultsChan, &wg, 0, sem,
-					taskChan)
+					taskChan, client)
 				if err != nil {
 					slog.Error("error scraping", "error", err)
 				}

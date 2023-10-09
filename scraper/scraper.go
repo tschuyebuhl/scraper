@@ -8,7 +8,6 @@ import (
 	"golang.org/x/net/html"
 	"io"
 	"log/slog"
-	"net/http"
 	"net/url"
 	"regexp"
 	"strings"
@@ -17,14 +16,23 @@ import (
 )
 
 var (
-	TooDeep = errors.New("depth is too high (maximum depth is )")
+	TooDeep = errors.New("depth is too high (maximum depth is hardcoded to 1)")
 	BadUrl  = errors.New("cannot parse url")
 	BadBody = errors.New("cannot parse body")
 )
 
 const MaxDepth = 1
 
-func Scrape(urlStr string, c cache.Cache, resultsChan chan<- map[string]int, wg *sync.WaitGroup, depth int, sem chan struct{}, taskChan chan<- string) error {
+func Scrape(
+	urlStr string,
+	c cache.Cache,
+	resultsChan chan<- map[string]int,
+	wg *sync.WaitGroup,
+	depth int,
+	sem chan struct{},
+	taskChan chan<- string,
+	requester data.HTTPRequester,
+) error {
 	slog.Info("scraping: ", "urlStr", urlStr, "depth", depth)
 
 	sem <- struct{}{}
@@ -42,12 +50,12 @@ func Scrape(urlStr string, c cache.Cache, resultsChan chan<- map[string]int, wg 
 			slog.Info("URL is currently being scraped", "pageURL", page.URL)
 			return nil
 		}
-		slog.Info("URL is already in cache: ", page.URL)
+		slog.Info("URL is already in cache: ", "url", page.URL)
 		resultsChan <- page.WordFrequency
 		return nil
 	}
 
-	resp, err := http.Get(urlStr)
+	resp, err := requester.Get(urlStr)
 	if err != nil {
 		return BadUrl
 	}
@@ -57,6 +65,7 @@ func Scrape(urlStr string, c cache.Cache, resultsChan chan<- map[string]int, wg 
 	if err != nil {
 		return BadBody
 	}
+	slog.Info("body: ", "response", string(bodyBytes))
 
 	extractedText := extractText(bytes.NewReader(bodyBytes))
 	frequentWords := countWords(extractedText)
