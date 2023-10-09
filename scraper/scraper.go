@@ -77,7 +77,9 @@ func Scrape(
 	for _, link := range links {
 		if _, found := c.Get(link); !found {
 			wg.Add(1)
-			taskChan <- link
+			go func(link string, nextDepth int) {
+				taskChan <- link
+			}(link, depth+1)
 		}
 	}
 	realData := &data.PageData{
