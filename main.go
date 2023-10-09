@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/tschuyebuhl/scraper/cache"
+	"github.com/tschuyebuhl/scraper/data"
 	"github.com/tschuyebuhl/scraper/scraper"
 	"log/slog"
 	"net/http"
@@ -18,13 +19,14 @@ func main() {
 		"https://www.wikipedia.org",
 	}
 
-	resultsChan := make(chan map[string]int)
+	//resultsChan := make(chan map[string]int)
+	resultsChan := make(chan data.PageData)
 	var wg sync.WaitGroup
 	c := cache.NewInMemoryCache()
 
 	taskChan := make(chan string, 1000)
 
-	const workerCount = 2000
+	const workerCount = 100
 	sem := make(chan struct{}, workerCount)
 
 	client := &http.Client{}
@@ -53,7 +55,7 @@ func main() {
 	}()
 
 	for res := range resultsChan {
-		UpdateMetrics("res", res)
+		UpdateMetrics(res.URL, res.WordFrequency)
 		slog.Debug("results: %v", res)
 	}
 

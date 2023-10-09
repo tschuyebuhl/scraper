@@ -26,7 +26,8 @@ const MaxDepth = 1
 func Scrape(
 	urlStr string,
 	c cache.Cache,
-	resultsChan chan<- map[string]int,
+	//resultsChan chan<- map[string]int,
+	resultsChan chan<- data.PageData,
 	wg *sync.WaitGroup,
 	depth int,
 	sem chan struct{},
@@ -51,7 +52,7 @@ func Scrape(
 			return nil
 		}
 		slog.Info("URL is already in cache: ", "url", page.URL)
-		resultsChan <- page.WordFrequency
+		resultsChan <- *page
 		return nil
 	}
 
@@ -65,12 +66,13 @@ func Scrape(
 	if err != nil {
 		return BadBody
 	}
-	slog.Info("body: ", "response", string(bodyBytes))
+	// this can get noisy!
+	//slog.Info("body: ", "response", string(bodyBytes))
 
 	extractedText := extractText(bytes.NewReader(bodyBytes))
 	frequentWords := countWords(extractedText)
 
-	resultsChan <- frequentWords
+	resultsChan <- data.PageData{URL: urlStr, WordFrequency: frequentWords}
 
 	links := FindLinks(bytes.NewReader(bodyBytes), urlStr)
 	for _, link := range links {
