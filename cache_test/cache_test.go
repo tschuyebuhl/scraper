@@ -50,7 +50,7 @@ func TestCacheBehaviors(t *testing.T) {
 	resultsChan := make(chan data.PageData, 1)
 	wg := &sync.WaitGroup{}
 	sem := make(chan struct{}, 1)
-	taskChan := make(chan string, 1)
+	taskChan := make(chan data.Task, 1)
 
 	mc := &mockCache{
 		data: map[string]*data.PageData{

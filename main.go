@@ -24,28 +24,28 @@ func main() {
 	var wg sync.WaitGroup
 	c := cache.NewInMemoryCache()
 
-	taskChan := make(chan string, 1000)
+	taskChan := make(chan data.Task, 1000)
 
-	const workerCount = 100
+	const workerCount = 20
 	sem := make(chan struct{}, workerCount)
 
 	client := &http.Client{}
 
+	for _, url := range urls {
+		wg.Add(1)
+		taskChan <- data.Task{URL: url}
+	}
+
 	for i := 0; i < workerCount; i++ {
 		go func() {
-			for url := range taskChan {
-				err := scraper.Scrape(url, c, resultsChan, &wg, 0, sem,
+			for task := range taskChan {
+				err := scraper.Scrape(task.URL, c, resultsChan, &wg, 0, sem,
 					taskChan, client)
 				if err != nil {
 					slog.Error("error scraping", "error", err)
 				}
 			}
 		}()
-	}
-
-	for _, url := range urls {
-		wg.Add(1)
-		taskChan <- url
 	}
 
 	go func() {
