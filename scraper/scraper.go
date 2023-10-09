@@ -12,7 +12,6 @@ import (
 	"regexp"
 	"strings"
 	"sync"
-	"time"
 )
 
 var (
@@ -88,7 +87,6 @@ func Scrape(
 	}
 	c.Put(urlStr, realData)
 
-	time.Sleep(time.Second * 5)
 	return nil
 }
 
