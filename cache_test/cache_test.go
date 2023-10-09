@@ -1,7 +1,6 @@
 package cache_test
 
 import (
-	"fmt"
 	"github.com/tschuyebuhl/scraper/data"
 	"github.com/tschuyebuhl/scraper/scraper"
 	"io"
@@ -48,7 +47,7 @@ func (m *MockRequester) Get(url string) (*http.Response, error) {
 }
 
 func TestCacheBehaviors(t *testing.T) {
-	resultsChan := make(chan map[string]int, 1)
+	resultsChan := make(chan data.PageData, 1)
 	wg := &sync.WaitGroup{}
 	sem := make(chan struct{}, 1)
 	taskChan := make(chan string, 1)
@@ -72,9 +71,8 @@ func TestCacheBehaviors(t *testing.T) {
 
 	select {
 	case result := <-resultsChan:
-		if result["test"] != 1 {
-			fmt.Println(result)
-			t.Errorf("Expected word frequency for 'test' to be 1, got %d", result["test"])
+		if result.WordFrequency["test"] != 1 {
+			t.Errorf("Expected word frequency for 'test' to be 1, got %d", result.WordFrequency["test"])
 		}
 	case <-time.After(time.Second * 1):
 		t.Errorf("resultchan cannot be empty")
