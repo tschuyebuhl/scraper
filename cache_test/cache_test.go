@@ -77,7 +77,7 @@ func TestCacheBehaviors(t *testing.T) {
 			t.Errorf("Expected word frequency for 'test' to be 1, got %d", result["test"])
 		}
 	case <-time.After(time.Second * 1):
-		t.Errorf("nah resultschan empty?")
+		t.Errorf("resultchan cannot be empty")
 	}
 
 	mc = &mockCache{
@@ -96,7 +96,7 @@ func TestCacheBehaviors(t *testing.T) {
 
 	select {
 	case <-resultsChan:
-		t.Error("should not retrieve any results.")
+		t.Error("should not retrieve any results")
 	case <-time.After(time.Second * 1):
 	}
 }
