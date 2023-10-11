@@ -11,13 +11,12 @@ import (
 	"net/url"
 	"regexp"
 	"strings"
-	"sync"
 )
 
 var (
-	TooDeep = errors.New("depth is too high (maximum depth is hardcoded to 3)")
-	BadUrl  = errors.New("cannot parse url")
-	BadBody = errors.New("cannot parse body")
+	TooDeep    = errors.New("depth is too high (maximum depth is hardcoded to 3)")
+	BadRequest = errors.New("error during get")
+	BadBody    = errors.New("cannot parse body")
 )
 
 const MaxDepth = 3
@@ -25,25 +24,21 @@ const MaxDepth = 3
 func Scrape(
 	urlStr string,
 	c cache.Cache,
-	//resultsChan chan<- map[string]int,
 	resultsChan chan<- data.PageData,
-	wg *sync.WaitGroup,
 	depth int,
-	sem chan struct{},
-	//taskChan chan<- string,
-	taskChan chan<- data.Task,
 	requester data.HTTPRequester,
+	sem chan struct{},
 ) error {
 	slog.Info("scraping: ", "urlStr", urlStr, "depth", depth)
 
 	sem <- struct{}{}
 	defer func() {
-		slog.Info("exited scrape")
+		slog.Info("releasing semaphore token")
 		<-sem
-		wg.Done()
 	}()
 
 	if depth > MaxDepth {
+		slog.Error("too deep, stopping scrape")
 		return TooDeep
 	}
 
@@ -59,7 +54,7 @@ func Scrape(
 
 	resp, err := requester.Get(urlStr)
 	if err != nil {
-		return BadUrl
+		return BadRequest
 	}
 	defer resp.Body.Close()
 
@@ -77,11 +72,14 @@ func Scrape(
 
 	links := FindLinks(bytes.NewReader(bodyBytes), urlStr)
 	for _, link := range links {
-		if _, found := c.Get(link); !found {
-			slog.Info("adding to taskchan", "depth", depth, "url", link)
-			wg.Add(1)
-			taskChan <- data.Task{URL: link, Depth: depth + 1}
-		}
+		go func(link string) {
+			if _, found := c.Get(link); !found {
+				slog.Info("adding to task list", "depth", depth+1, "url", link)
+				err := Scrape(link, c, resultsChan, depth+1, requester, sem)
+				if err != nil {
+				}
+			}
+		}(link)
 	}
 
 	realData := &data.PageData{
