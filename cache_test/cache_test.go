@@ -4,6 +4,7 @@ import (
 	"github.com/tschuyebuhl/scraper/data"
 	"github.com/tschuyebuhl/scraper/scraper"
 	"io"
+	"log/slog"
 	"net/http"
 	"strings"
 	"sync"
@@ -30,16 +31,19 @@ func (m *mockCache) Put(key string, value *data.PageData) {
 }
 
 func (m *mockCache) Delete(key string) {
+	slog.Error("not implemented, ", "key", key)
 
 }
 
 func (m *mockCache) Nuke(sure bool) {
+	slog.Error("not implemented, ", "sure", sure)
 
 }
 
 type MockRequester struct{}
 
 func (m *MockRequester) Get(url string) (*http.Response, error) {
+	slog.Info("mocking request ", "url", url)
 	return &http.Response{
 		StatusCode: http.StatusOK,
 		Body:       io.NopCloser(strings.NewReader("<html>aaa</html>")),
@@ -50,7 +54,6 @@ func TestCacheBehaviors(t *testing.T) {
 	resultsChan := make(chan data.PageData, 1)
 	wg := &sync.WaitGroup{}
 	sem := make(chan struct{}, 1)
-	taskChan := make(chan data.Task, 1)
 
 	mc := &mockCache{
 		data: map[string]*data.PageData{
@@ -64,7 +67,7 @@ func TestCacheBehaviors(t *testing.T) {
 
 	mockRequester := &MockRequester{}
 	wg.Add(1)
-	err := scraper.Scrape("https://example.com", mc, resultsChan, wg, 0, sem, taskChan, mockRequester)
+	err := scraper.Scrape("https://example.com", mc, resultsChan, 0, mockRequester, sem)
 	if err != nil {
 		t.Error("Expected no error for already scraped URL, got", err)
 	}
@@ -87,7 +90,7 @@ func TestCacheBehaviors(t *testing.T) {
 		},
 	}
 	wg.Add(1)
-	err = scraper.Scrape("https://example.com", mc, resultsChan, wg, 0, sem, taskChan, mockRequester)
+	err = scraper.Scrape("https://example.com", mc, resultsChan, 0, mockRequester, sem)
 	if err != nil {
 		t.Error("error for URL that's being scraped: ", err)
 	}

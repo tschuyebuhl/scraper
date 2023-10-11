@@ -14,12 +14,12 @@ import (
 )
 
 var (
-	TooDeep    = errors.New("depth is too high (maximum depth is hardcoded to 3)")
+	TooDeep    = errors.New("depth is too high (maximum depth is hardcoded to 2)")
 	BadRequest = errors.New("error during get")
 	BadBody    = errors.New("cannot parse body")
 )
 
-const MaxDepth = 3
+const MaxDepth = 2
 
 func Scrape(
 	urlStr string,
@@ -56,14 +56,17 @@ func Scrape(
 	if err != nil {
 		return BadRequest
 	}
-	defer resp.Body.Close()
+
+	defer func(Body io.ReadCloser) {
+		_ = Body.Close()
+	}(resp.Body)
 
 	bodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return BadBody
 	}
 	// this can get noisy!
-	//slog.Info("body: ", "response", string(bodyBytes))
+	//slog.Debug("body: ", "response", string(bodyBytes))
 
 	extractedText := extractText(bytes.NewReader(bodyBytes))
 	frequentWords := countWords(extractedText)
@@ -74,9 +77,9 @@ func Scrape(
 	for _, link := range links {
 		go func(link string) {
 			if _, found := c.Get(link); !found {
-				slog.Info("adding to task list", "depth", depth+1, "url", link)
-				err := Scrape(link, c, resultsChan, depth+1, requester, sem)
-				if err != nil {
+				if depth+1 <= MaxDepth { //dumb failsafe but works I guess?
+					slog.Info("adding to task list", "depth", depth+1, "url", link)
+					_ = Scrape(link, c, resultsChan, depth+1, requester, sem)
 				}
 			}
 		}(link)
@@ -133,7 +136,7 @@ func IsValidWord(word string) bool {
 }
 
 func FindLinks(body io.Reader, baseURL string) []string {
-	links := []string{}
+	var links []string
 	doc, err := html.Parse(body)
 	if err != nil {
 		return links

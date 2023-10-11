@@ -2,6 +2,7 @@ package cache
 
 import (
 	"github.com/tschuyebuhl/scraper/data"
+	"log/slog"
 	"sync"
 )
 
@@ -17,13 +18,11 @@ func NewInMemoryCache() *InMem {
 }
 
 func (c *InMem) Delete(key string) {
-	//TODO implement me
-	panic("implement me")
+	slog.Error("not implemented, ", "key", key)
 }
 
 func (c *InMem) Nuke(sure bool) {
-	//TODO implement me
-	panic("implement me")
+	slog.Error("not implemented, ", "sure", sure)
 }
 
 func (c *InMem) Put(key string, value *data.PageData) {
