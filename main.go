@@ -12,7 +12,7 @@ import (
 )
 
 func main() {
-	Serve()
+	RunMetricsServer(":1337")
 
 	urls := []string{
 		"https://news.google.com",
