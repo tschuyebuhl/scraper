@@ -24,8 +24,7 @@ func UpdateMetrics(url string, wordCounts map[string]int) {
 	}
 }
 
-func Serve() {
-	addr := ":1337"
+func RunMetricsServer(addr string) {
 	http.Handle("/metrics", promhttp.Handler())
 	go func() {
 		slog.Info("serving on ", "addr", addr)
