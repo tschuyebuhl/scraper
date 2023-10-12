@@ -18,7 +18,7 @@ func main() {
 		"https://news.google.com",
 	}
 
-	resultsChan := make(chan data.PageData, 3)
+	resultsChan := make(chan data.PageData, 1000)
 	sem := make(chan struct{}, 20)
 
 	c := cache.NewInMemoryCache()
