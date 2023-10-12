@@ -24,10 +24,10 @@ func (m *mockCache) Get(key string) (*data.PageData, bool) {
 	return val, ok
 }
 
-func (m *mockCache) Put(key string, value *data.PageData) {
+func (m *mockCache) Put(value *data.PageData) {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
-	m.data[key] = value
+	m.data[value.URL] = value
 }
 
 func (m *mockCache) Delete(key string) {
@@ -58,9 +58,9 @@ func TestCacheBehaviors(t *testing.T) {
 	mc := &mockCache{
 		data: map[string]*data.PageData{
 			"https://example.com": {
-				URL:           "https://example.com",
-				WordFrequency: map[string]int{"test": 1},
-				IsScraped:     false,
+				URL:               "https://example.com",
+				WordFrequency:     map[string]int{"test": 1},
+				CurrentlyScraping: false,
 			},
 		},
 	}
@@ -84,8 +84,8 @@ func TestCacheBehaviors(t *testing.T) {
 	mc = &mockCache{
 		data: map[string]*data.PageData{
 			"https://example.com": {
-				URL:       "https://example.com",
-				IsScraped: true,
+				URL:               "https://example.com",
+				CurrentlyScraping: true,
 			},
 		},
 	}

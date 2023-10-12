@@ -21,6 +21,10 @@ var (
 
 const MaxDepth = 2
 
+/*
+Scrape - a high level overview: consume a token, defer release,
+check if depth is okay, check cache, "lock" url in cache, perform a GET, parse body, send results and queue more jobs
+*/
 func Scrape(
 	urlStr string,
 	c cache.Cache,
@@ -43,7 +47,7 @@ func Scrape(
 	}
 
 	if page, found := c.Get(urlStr); found {
-		if page.IsScraped {
+		if page.CurrentlyScraping {
 			slog.Info("URL is currently being scraped", "pageURL", page.URL)
 			return nil
 		}
@@ -51,6 +55,11 @@ func Scrape(
 		resultsChan <- *page
 		return nil
 	}
+
+	c.Put(&data.PageData{
+		URL:               urlStr,
+		CurrentlyScraping: true,
+	})
 
 	resp, err := requester.Get(urlStr)
 	if err != nil {
@@ -86,11 +95,11 @@ func Scrape(
 	}
 
 	realData := &data.PageData{
-		URL:           urlStr,
-		WordFrequency: frequentWords,
-		IsScraped:     false,
+		URL:               urlStr,
+		WordFrequency:     frequentWords,
+		CurrentlyScraping: false,
 	}
-	c.Put(urlStr, realData)
+	c.Put(realData)
 
 	return nil
 }

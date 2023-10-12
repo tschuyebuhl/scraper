@@ -25,10 +25,10 @@ func (c *InMem) Nuke(sure bool) {
 	slog.Error("not implemented, ", "sure", sure)
 }
 
-func (c *InMem) Put(key string, value *data.PageData) {
+func (c *InMem) Put(value *data.PageData) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	c.data[key] = value
+	c.data[value.URL] = value
 }
 
 func (c *InMem) Get(key string) (*data.PageData, bool) {
