@@ -94,12 +94,11 @@ func Scrape(
 		}(link)
 	}
 
-	realData := &data.PageData{
+	c.Put(&data.PageData{
 		URL:               urlStr,
 		WordFrequency:     frequentWords,
 		CurrentlyScraping: false,
-	}
-	c.Put(realData)
+	})
 
 	return nil
 }
