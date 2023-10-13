@@ -3,14 +3,15 @@ package scraper
 import (
 	"bytes"
 	"errors"
-	"github.com/tschuyebuhl/scraper/cache"
-	"github.com/tschuyebuhl/scraper/data"
-	"golang.org/x/net/html"
 	"io"
 	"log/slog"
 	"net/url"
 	"regexp"
 	"strings"
+
+	"github.com/tschuyebuhl/scraper/cache"
+	"github.com/tschuyebuhl/scraper/data"
+	"golang.org/x/net/html"
 )
 
 var (
@@ -23,7 +24,7 @@ const MaxDepth = 2
 
 /*
 Scrape - a high level overview: consume a token, defer release,
-check if depth is okay, check cache, "lock" url in cache, perform a GET, parse body, send results and queue more jobs
+check if depth is okay, check cache, "lock" url in cache, perform a GET, parse body, send results and queue more jobs if it's not too deep
 */
 func Scrape(
 	urlStr string,
@@ -82,14 +83,20 @@ func Scrape(
 
 	resultsChan <- data.PageData{URL: urlStr, WordFrequency: frequentWords}
 
+	if depth == maxDepth {
+		c.Put(&data.PageData{
+			URL:               urlStr,
+			WordFrequency:     frequentWords,
+			CurrentlyScraping: false,
+		})
+		return nil
+	}
 	links := FindLinks(bytes.NewReader(bodyBytes), urlStr)
 	for _, link := range links {
 		go func(link string) {
 			if _, found := c.Get(link); !found {
-				if depth+1 <= MaxDepth { //dumb failsafe but works I guess?
-					slog.Info("adding to task list", "depth", depth+1, "url", link)
-					_ = Scrape(link, c, resultsChan, depth+1, requester, sem)
-				}
+				slog.Info("adding to task list", "depth", depth+1, "url", link)
+				_ = Scrape(link, c, resultsChan, depth+1, requester, sem)
 			}
 		}(link)
 	}
